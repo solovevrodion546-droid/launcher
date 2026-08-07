@@ -10,8 +10,30 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Распаковать проект
-        run: unzip -o VoidLiteLauncher.zip -d unpacked
+      - name: Подготовить проект
+        run: |
+          set -e
+          mkdir -p unpacked
+          ZIP=$(find . -path ./.git -prune -o -path ./unpacked -prune -o -name "*.zip" -print | head -1)
+          if [ -n "$ZIP" ]; then
+            echo "Нашёл архив: $ZIP"
+            unzip -o "$ZIP" -d unpacked
+          elif [ -f VoidLiteLauncher/settings.gradle.kts ]; then
+            echo "Проект загружен папкой"
+            cp -r VoidLiteLauncher unpacked/
+          elif [ -f settings.gradle.kts ]; then
+            echo "Файлы проекта лежат в корне репозитория"
+            mkdir -p unpacked/VoidLiteLauncher
+            cp -r app settings.gradle.kts build.gradle.kts gradle.properties unpacked/VoidLiteLauncher/
+          else
+            echo "ОШИБКА: не найден ни ZIP-архив, ни файлы проекта"
+            exit 1
+          fi
+          if [ -f unpacked/settings.gradle.kts ]; then
+            mkdir -p unpacked/VoidLiteLauncher
+            find unpacked -mindepth 1 -maxdepth 1 ! -name VoidLiteLauncher -exec mv {} unpacked/VoidLiteLauncher/ \;
+          fi
+          ls unpacked/VoidLiteLauncher
 
       - uses: actions/setup-java@v4
         with:
