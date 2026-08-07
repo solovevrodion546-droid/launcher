@@ -1,0 +1,35 @@
+name: Build APK
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Распаковать проект
+        run: unzip -o VoidLiteLauncher.zip -d unpacked
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Установить Gradle
+        run: |
+          wget -q https://services.gradle.org/distributions/gradle-8.9-bin.zip -O /tmp/gradle.zip
+          unzip -q /tmp/gradle.zip -d /opt
+          echo "/opt/gradle-8.9/bin" >> "$GITHUB_PATH"
+
+      - name: Собрать APK
+        working-directory: unpacked/VoidLiteLauncher
+        run: gradle assembleDebug --no-daemon --stacktrace
+
+      - name: Загрузить готовый APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: void-lite-apk
+          path: unpacked/VoidLiteLauncher/app/build/outputs/apk/debug/app-debug.apk
